@@ -6,7 +6,7 @@ from django.conf import settings
 from telegram.ext import Updater
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'meetup_management.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 
