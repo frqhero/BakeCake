@@ -3,7 +3,8 @@ import os
 
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from telegram.ext import Updater
+from telegram import Update
+from telegram.ext import Updater, CallbackContext
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
@@ -16,10 +17,18 @@ logging.basicConfig(
 )
 
 
+def start(update: Update, context: CallbackContext) -> str:
+    pass
+
+
 def main():
     tg_bot_token = settings.TG_BOT_TOKEN
     updater = Updater(token=tg_bot_token)
     dispatcher = updater.dispatcher
+
+    # top level conversation handler
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
 
 
 class Command(BaseCommand):
