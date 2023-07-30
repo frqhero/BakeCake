@@ -72,9 +72,31 @@ def start(update: Update, context: CallbackContext) -> str:
 
 def show_complete_cakes(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
-    update.callback_query.copy_message(chat_id=update.effective_chat.id)
-    update.callback_query.answer(text='asd')
-    return 'SELECT_CAKE_TYPE'
+    # update.callback_query.copy_message(chat_id=update.effective_chat.id)
+    # update.callback_query.answer(text='')
+    update.callback_query.message.reply_text('раз тортик')
+    update.callback_query.message.reply_text('два тортик')
+    update.callback_query.message.reply_text('три тортик')
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text='Первый', callback_data=str('COMPLETED_CAKE')
+            ),
+            InlineKeyboardButton(
+                text='Второй', callback_data=str('CUSTOM_CAKE')
+            ),
+            InlineKeyboardButton(
+                text='Третий', callback_data=str('CUSTOM_CAKE')
+            ),
+            InlineKeyboardButton(
+                text='Четвертый', callback_data=str('CUSTOM_CAKE')
+            ),
+        ],
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.message.reply_text('выберите тортик', reply_markup=keyboard)
+
+    return 'SHOWING_COMPLETED_CAKES'
 
 
 def create_custom_cake(update: Update, context: CallbackContext) -> str:
@@ -101,15 +123,22 @@ def main():
     updater = Updater(token=tg_bot_token)
     dispatcher = updater.dispatcher
 
+    # completed_cakes_conv_handler = ConversationHandler(
+    #     entry_points=[],
+    #     states=[],
+    #     fallbacks=[]
+    # )
+
     # top level conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
             'SELECT_CAKE_TYPE': [
                 CallbackQueryHandler(show_complete_cakes, pattern='^COMPLETED_CAKE$'),
-                CallbackQueryHandler(create_custom_cake, pattern='^CUSTOM_CAKE'),
-                CallbackQueryHandler(end, pattern='^-1'),
-            ]
+                CallbackQueryHandler(create_custom_cake, pattern='^CUSTOM_CAKE$'),
+                CallbackQueryHandler(end, pattern='^-1$'),
+            ],
+            # 'SHOWING_COMPLETED_CAKES': [completed_cakes_conv_handler],
         },
         fallbacks=[CommandHandler('stop', stop)],
     )
