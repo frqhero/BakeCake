@@ -10,7 +10,7 @@ from telegram.ext import (
     CallbackContext,
     CommandHandler,
     ConversationHandler,
-    InlineQueryHandler,
+    CallbackQueryHandler,
 )
 import django
 import requests
@@ -31,6 +31,7 @@ def start(update: Update, context: CallbackContext) -> str:
         """\
         Закажите торт!🍰 В нашем магазине вы можете
         выбрать готовый торт или собрать свой!
+        Для завершения нажмите "Отменить" или наберите /stop
         """
     )
 
@@ -43,10 +44,11 @@ def start(update: Update, context: CallbackContext) -> str:
                 text='Соберите свой', callback_data=str('CUSTOM_CAKE')
             ),
         ],
-        # [
-        #     InlineKeyboardButton(text='Show data', callback_data=str(SHOWING)),
-        #     InlineKeyboardButton(text='Done', callback_data=str(END)),
-        # ],
+        [
+            InlineKeyboardButton(
+                text='Отменить', callback_data=str('-1')
+            ),
+        ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
 
@@ -57,10 +59,10 @@ def start(update: Update, context: CallbackContext) -> str:
             reply_markup=keyboard,
         )
     else:
-        update.message.reply_text('Добро пожаловать в Bake Cake! 🎂🎂🎂')
         image_response = requests.get(
             'https://www.ilovecake.ru/data/images/designer-cake.png'
         )
+        update.message.reply_text('Добро пожаловать в Bake Cake! 🎂🎂🎂')
         update.message.reply_photo(image_response.content)
         update.message.reply_text(text=text, reply_markup=keyboard)
 
@@ -68,9 +70,11 @@ def start(update: Update, context: CallbackContext) -> str:
     return 'SELECT_CAKE_TYPE'
 
 
-def get_complete_cakes(update: Update, context: CallbackContext) -> str:
+def show_complete_cakes(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
-    pass
+    update.callback_query.copy_message(chat_id=update.effective_chat.id)
+    update.callback_query.answer(text='asd')
+    return 'SELECT_CAKE_TYPE'
 
 
 def create_custom_cake(update: Update, context: CallbackContext) -> str:
@@ -80,9 +84,16 @@ def create_custom_cake(update: Update, context: CallbackContext) -> str:
 
 def stop(update: Update, context: CallbackContext) -> int:
     """End Conversation by command."""
-    update.message.reply_text('Okay, bye.')
+    update.message.reply_text('Удаляем беседу тогда...')
 
-    return 'END'
+    return -1
+
+
+def end(update: Update, context: CallbackContext) -> int:
+    update.callback_query.answer('Удаляем беседу тогда...')
+    update.callback_query.delete_message()
+
+    return -1
 
 
 def main():
@@ -95,8 +106,9 @@ def main():
         entry_points=[CommandHandler('start', start)],
         states={
             'SELECT_CAKE_TYPE': [
-                InlineQueryHandler(get_complete_cakes),
-                InlineQueryHandler(create_custom_cake),
+                CallbackQueryHandler(show_complete_cakes, pattern='^COMPLETED_CAKE$'),
+                CallbackQueryHandler(create_custom_cake, pattern='^CUSTOM_CAKE'),
+                CallbackQueryHandler(end, pattern='^-1'),
             ]
         },
         fallbacks=[CommandHandler('stop', stop)],
