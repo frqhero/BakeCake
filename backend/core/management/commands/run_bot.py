@@ -33,6 +33,47 @@ logging.basicConfig(
 )
 
 
+class CakeRepresentation:
+    def __init__(self, cake, berries=None, decor=None, signature=None):
+        self.cake = cake
+        if not berries:
+            self.berries = []
+        if not decor:
+            self.decor = []
+        if not signature:
+            self.signature = []
+
+    def add_signature(self, signature):
+        self.signature.append(signature)
+
+    def __str__(self):
+        main_text = f'{self.cake.title}\n\n{self.cake.description}'
+        if self.berries:
+            berry_names = [berry.title for berry in self.berries]
+            joined_berry_names = ', '.join(berry_names)
+            berry_string = f'\n\nДобавленные ягоды: {joined_berry_names}'
+            main_text += berry_string
+        if self.decor:
+            decor_names = [decor.title for decor in self.decor]
+            joined_decor_name = ', '.join(decor_names)
+            decor_string = f'\n\nДобавленный декор: {joined_decor_name}'
+            main_text += decor_string
+        if self.signature:
+            joined_signatures = ', '.join(self.signature)
+            signature_string = f'\n\nДобавленные надписи: {joined_signatures}'
+            main_text += signature_string
+        return main_text
+
+
+    def get_repr(self):
+        main_text = self.cake.title + '\n\n' + self.cake.description
+        if self.berries:
+            berries_titles = [berry.title for berry in self.berries]
+            joined_berries_titles = ', '.join(berries_titles)
+            main_text += '\n\n' + joined_berries_titles
+        return main_text
+
+
 def start(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
     title = 'Добро пожаловать в Bake Cake!'
@@ -127,6 +168,8 @@ def offer_custom(update: Update, context: CallbackContext) -> str:
     _, cake_pk = update.callback_query.data.split()
 
     cake = Cake.objects.get(pk=cake_pk)
+    cake_repr = CakeRepresentation(cake)
+    context.user_data['cake_repr'] = cake_repr
 
     bold_entity = MessageEntity(
         type=MessageEntity.BOLD, offset=0, length=len(cake.title)
@@ -140,7 +183,7 @@ def offer_custom(update: Update, context: CallbackContext) -> str:
                 text='Добавить декор', callback_data=str('decor')
             ),
             InlineKeyboardButton(
-                text='Сделать надпись', callback_data=str('inscription')
+                text='Сделать надпись', callback_data=str('signature')
             ),
         ],
         [
@@ -150,7 +193,7 @@ def offer_custom(update: Update, context: CallbackContext) -> str:
     keyboard = InlineKeyboardMarkup(buttons)
     update.callback_query.message.reply_photo(
         cake.image_link,
-        cake.title + '\n\n' + cake.description,
+        str(cake_repr),
         caption_entities=[bold_entity],
         reply_markup=keyboard,
     )
@@ -161,7 +204,7 @@ def offer_custom(update: Update, context: CallbackContext) -> str:
 def add_berries(update: Update, context: CallbackContext) -> str:
     buttons_row = [
         InlineKeyboardButton(
-            text=berry.title, callback_data=str(f'add berry {berry.slug}')
+            text=berry.title, callback_data=str(f'add berries {berry.slug}')
         )
         for berry in Berry.objects.all()
     ]
@@ -191,22 +234,59 @@ def add_decor(update: Update, context: CallbackContext) -> str:
     update.callback_query.edit_message_reply_markup(keyboard)
 
 
-def make_inscription(update: Update, context: CallbackContext) -> str:
+def make_signature(update: Update, context: CallbackContext) -> str:
     update.callback_query.edit_message_reply_markup()
 
     return 'TYPING'
 
 
-def add_inscription(update: Update, context: CallbackContext) -> str:
-    pass
+def add_signature(update: Update, context: CallbackContext) -> str:
+    signature = update.message.text
+    cake_repr = context.user_data['cake_repr']
+    if signature:
+        cake_repr.add_signature(signature)
+
+    bold_entity = MessageEntity(
+        type=MessageEntity.BOLD, offset=0, length=len(cake_repr.cake.title)
+    )
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text='Добавить ягоды', callback_data=str('berries')
+            ),
+            InlineKeyboardButton(
+                text='Добавить декор', callback_data=str('decor')
+            ),
+            InlineKeyboardButton(
+                text='Сделать надпись', callback_data=str('signature')
+            ),
+        ],
+        [
+            InlineKeyboardButton(text='Вернуться к выбору торта', callback_data=-1),
+        ],
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.message.reply_photo(
+        cake_repr.cake.image_link,
+        str(cake_repr),
+        caption_entities=[bold_entity],
+        reply_markup=keyboard,
+    )
+
+    return 'CUSTOMIZATION'
 
 
 def add_extra_ingredient(update: Update, context: CallbackContext) -> str:
     _, feature, ingredient = update.callback_query.data.split()
-    context.user_data[feature] = ingredient
-    message = update.callback_query.message
-    current_caption = message.caption
-    current_caption += '\n\n' + feature + ' ' + ingredient
+
+    if feature == 'berries':
+        obj = Berry.objects.get(slug=ingredient)
+    if feature == 'decor':
+        obj = Decor.objects.get(slug=ingredient)
+
+    cake_repr = context.user_data['cake_repr']
+    features_list = getattr(cake_repr, feature)
+    features_list.append(obj)
 
     buttons = [
         [
@@ -217,7 +297,7 @@ def add_extra_ingredient(update: Update, context: CallbackContext) -> str:
                 text='Добавить декор', callback_data=str('decor')
             ),
             InlineKeyboardButton(
-                text='Сделать надпись', callback_data=str('inscription')
+                text='Сделать надпись', callback_data=str('signature')
             ),
         ],
         [
@@ -225,7 +305,9 @@ def add_extra_ingredient(update: Update, context: CallbackContext) -> str:
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.message.edit_caption(current_caption, reply_markup=keyboard)
+    update.callback_query.message.edit_caption(str(cake_repr), reply_markup=keyboard)
+
+    return offer_custom(update, context)
 
 
 def main():
@@ -240,12 +322,12 @@ def main():
                 CallbackQueryHandler(add_berries, pattern='^berries$'),
                 CallbackQueryHandler(add_decor, pattern='^decor$'),
                 CallbackQueryHandler(
-                    make_inscription, pattern='^inscription$'
+                    make_signature, pattern='^signature$'
                 ),
                 CallbackQueryHandler(add_extra_ingredient, pattern='^add'),
                 CallbackQueryHandler(end, pattern='^-1$'),
             ],
-            'TYPING': [MessageHandler(Filters.text, add_inscription)],
+            'TYPING': [MessageHandler(Filters.text, add_signature)],
         },
         fallbacks=[],
         map_to_parent={-1: 'CUSTOMIZATION'}
