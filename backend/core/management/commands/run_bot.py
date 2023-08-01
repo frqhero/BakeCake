@@ -135,7 +135,7 @@ def show_complete_cakes(update: Update, context: CallbackContext) -> str:
         keyboard = InlineKeyboardMarkup(buttons)
         update.callback_query.message.reply_photo(
             cake.image_link,
-            cake.title + '\n\n' + cake.description,
+            cake.title + '\n' + str(cake.price) + ' руб.' + '\n\n' + cake.description,
             caption_entities=[bold_entity],
             reply_markup=keyboard,
         )
