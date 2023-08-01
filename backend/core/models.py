@@ -5,6 +5,7 @@ class Cake(models.Model):
     title = models.CharField(max_length=50)
     image_link = models.CharField(max_length=500)
     description = models.TextField()
+    price = models.FloatField()
 
     def __str__(self):
         return self.title
