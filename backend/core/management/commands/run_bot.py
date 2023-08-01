@@ -237,7 +237,8 @@ def offer_custom(update: Update, context: CallbackContext) -> str:
         ],
         [
             InlineKeyboardButton(
-                text='Вернуться к выбору торта', callback_data=-1
+                text='Перейти к оформлению заказа',
+                callback_data=str('check_out'),
             ),
         ],
     ]
@@ -379,6 +380,31 @@ def add_extra_ingredient(update: Update, context: CallbackContext) -> str:
     return offer_custom(update, context)
 
 
+def go_to_check_out(update: Update, context: CallbackContext) -> str:
+    cake_repr = context.user_data['cake_repr']
+    update.callback_query.message.reply_photo(
+        cake_repr.cake.image_link, str(cake_repr)
+    )
+    buttons = [
+        [
+            InlineKeyboardButton(text='Принять', callback_data=str('ACCEPT')),
+        ],
+        [
+            InlineKeyboardButton(text='Отказаться', callback_data=str('-1')),
+        ],
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.message.reply_text(
+        '⚠️ Продолжая, Вы соглашаетсь на обработку персональных данных',
+        reply_markup=keyboard,
+    )
+
+
+def submit_accept(update: Update, context: CallbackContext) -> str:
+    delivery_guy = 'https://xn----jtbnbixdby0fq.xn--p1ai/pics/5.png'
+    update.callback_query.message.reply_photo(delivery_guy)
+
+
 def main():
     tg_bot_token = settings.TG_BOT_TOKEN
     updater = Updater(token=tg_bot_token)
@@ -393,6 +419,8 @@ def main():
                 CallbackQueryHandler(make_signature, pattern='^signature$'),
                 CallbackQueryHandler(add_extra_ingredient, pattern='^add'),
                 CallbackQueryHandler(end, pattern='^-1$'),
+                CallbackQueryHandler(go_to_check_out, pattern='^check_out$'),
+                CallbackQueryHandler(submit_accept, pattern='^ACCEPT$'),
             ],
             'TYPING': [MessageHandler(Filters.text, add_signature)],
         },
@@ -415,6 +443,7 @@ def main():
                 CallbackQueryHandler(go_main, pattern='^MAIN$'),
                 CallbackQueryHandler(end, pattern='^-1$'),
             ],
+            'CHECK_OUT': [],
             'CUSTOMIZATION': [customization_handler],
         },
         fallbacks=[CommandHandler('stop', stop)],
