@@ -266,14 +266,14 @@ def add_signature(update: Update, context: CallbackContext) -> str:
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.message.reply_photo(
+    update.message.reply_photo(
         cake_repr.cake.image_link,
         str(cake_repr),
         caption_entities=[bold_entity],
         reply_markup=keyboard,
     )
 
-    return 'CUSTOMIZATION'
+    return 'SELECTING_FEATURES'
 
 
 def add_extra_ingredient(update: Update, context: CallbackContext) -> str:
