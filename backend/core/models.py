@@ -34,4 +34,12 @@ class AboutUs(models.Model):
     address = models.CharField('Адрес компании', max_length=200)
 
     def __str__(self):
-        return self.telegram
+        return (
+            self.telegram
+            + '\n'
+            + self.instagram
+            + '\n'
+            + self.phone_number
+            + '\n'
+            + self.address
+        )
