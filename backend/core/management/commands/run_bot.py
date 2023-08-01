@@ -17,14 +17,14 @@ from telegram.ext import (
     ConversationHandler,
     CallbackQueryHandler,
     MessageHandler,
-    Filters
+    Filters,
 )
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
-from ...models import Cake, Berry, Decor
+from ...models import Cake, Berry, Decor, AboutUs
 
 
 logging.basicConfig(
@@ -65,15 +65,6 @@ class CakeRepresentation:
         return main_text
 
 
-    def get_repr(self):
-        main_text = self.cake.title + '\n\n' + self.cake.description
-        if self.berries:
-            berries_titles = [berry.title for berry in self.berries]
-            joined_berries_titles = ', '.join(berries_titles)
-            main_text += '\n\n' + joined_berries_titles
-        return main_text
-
-
 def start(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
     title = 'Добро пожаловать в Bake Cake!'
@@ -90,6 +81,7 @@ def start(update: Update, context: CallbackContext) -> str:
             InlineKeyboardButton(
                 text='Соберите свой', callback_data=str('CUSTOM_CAKE')
             ),
+            InlineKeyboardButton(text='О нас', callback_data=str('ABOUT_US')),
         ],
         [
             InlineKeyboardButton(text='Отменить', callback_data=str('-1')),
@@ -135,7 +127,12 @@ def show_complete_cakes(update: Update, context: CallbackContext) -> str:
         keyboard = InlineKeyboardMarkup(buttons)
         update.callback_query.message.reply_photo(
             cake.image_link,
-            cake.title + '\n\n' + cake.description,
+            cake.title
+            + '\n'
+            + str(cake.price)
+            + ' руб.'
+            + '\n\n'
+            + cake.description,
             caption_entities=[bold_entity],
             reply_markup=keyboard,
         )
@@ -145,6 +142,58 @@ def show_complete_cakes(update: Update, context: CallbackContext) -> str:
 
 def create_custom_cake(update: Update, context: CallbackContext) -> str:
     pass
+
+
+def about_us(update: Update, context: CallbackContext) -> str:
+    about_us_info = AboutUs.objects.first()
+
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text='Готовый', callback_data=str('COMPLETE_CAKE')
+            ),
+            InlineKeyboardButton(
+                text='Соберите свой', callback_data=str('CUSTOM_CAKE')
+            ),
+            InlineKeyboardButton(text='Главная', callback_data=str('MAIN')),
+        ],
+        [
+            InlineKeyboardButton(text='Отменить', callback_data=str('-1')),
+        ],
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+
+    update.callback_query.edit_message_caption(
+        str(about_us_info), reply_markup=keyboard
+    )
+
+
+def go_main(update: Update, context: CallbackContext) -> str:
+    title = 'Добро пожаловать в Bake Cake!'
+    info = 'В нашем магазине вы можете выбрать готовый торт или собрать свой!'
+    ending = 'Для завершения нажмите "Отменить" или наберите /stop'
+
+    text = title + '\n\n' + info + '\n\n' + ending
+
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text='Готовый', callback_data=str('COMPLETE_CAKE')
+            ),
+            InlineKeyboardButton(
+                text='Соберите свой', callback_data=str('CUSTOM_CAKE')
+            ),
+            InlineKeyboardButton(text='О нас', callback_data=str('ABOUT_US')),
+        ],
+        [
+            InlineKeyboardButton(text='Отменить', callback_data=str('-1')),
+        ],
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    bold_entity = MessageEntity(type=MessageEntity.BOLD, offset=0, length=29)
+    update.callback_query.edit_message_caption(
+        text, reply_markup=keyboard, caption_entities=[bold_entity]
+    )
 
 
 def stop(update: Update, context: CallbackContext) -> int:
@@ -187,7 +236,10 @@ def offer_custom(update: Update, context: CallbackContext) -> str:
             ),
         ],
         [
-            InlineKeyboardButton(text='Вернуться к выбору торта', callback_data=-1),
+            InlineKeyboardButton(
+                text='Перейти к оформлению заказа',
+                callback_data=str('check_out'),
+            ),
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
@@ -211,7 +263,9 @@ def add_berries(update: Update, context: CallbackContext) -> str:
     buttons = [
         buttons_row,
         [
-            InlineKeyboardButton(text='Вернуться к выбору торта', callback_data=-1),
+            InlineKeyboardButton(
+                text='Вернуться к выбору торта', callback_data=-1
+            ),
         ],
     ]
 
@@ -221,14 +275,20 @@ def add_berries(update: Update, context: CallbackContext) -> str:
 
 def add_decor(update: Update, context: CallbackContext) -> str:
     buttons_row = [
-        [InlineKeyboardButton(
-            text=decor.title, callback_data=str(f'add decor {decor.slug}')
-        )]
+        [
+            InlineKeyboardButton(
+                text=decor.title, callback_data=str(f'add decor {decor.slug}')
+            )
+        ]
         for decor in Decor.objects.all()
     ]
-    buttons_row.append([
-            InlineKeyboardButton(text='Вернуться к выбору торта', callback_data=-1),
-        ])
+    buttons_row.append(
+        [
+            InlineKeyboardButton(
+                text='Вернуться к выбору торта', callback_data=-1
+            ),
+        ]
+    )
 
     keyboard = InlineKeyboardMarkup(buttons_row)
     update.callback_query.edit_message_reply_markup(keyboard)
@@ -236,6 +296,10 @@ def add_decor(update: Update, context: CallbackContext) -> str:
 
 def make_signature(update: Update, context: CallbackContext) -> str:
     update.callback_query.edit_message_reply_markup()
+    update.callback_query.message.reply_text(
+        'Мы можем разместить на торте любую надпись, например: «С днем рождения!»\n'
+        'Введите желаемую надпись:'
+    )
 
     return 'TYPING'
 
@@ -262,7 +326,9 @@ def add_signature(update: Update, context: CallbackContext) -> str:
             ),
         ],
         [
-            InlineKeyboardButton(text='Вернуться к выбору торта', callback_data=-1),
+            InlineKeyboardButton(
+                text='Вернуться к выбору торта', callback_data=-1
+            ),
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
@@ -301,13 +367,42 @@ def add_extra_ingredient(update: Update, context: CallbackContext) -> str:
             ),
         ],
         [
-            InlineKeyboardButton(text='Вернуться к выбору торта', callback_data=-1),
+            InlineKeyboardButton(
+                text='Вернуться к выбору торта', callback_data=-1
+            ),
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.message.edit_caption(str(cake_repr), reply_markup=keyboard)
+    update.callback_query.message.edit_caption(
+        str(cake_repr), reply_markup=keyboard
+    )
 
     return offer_custom(update, context)
+
+
+def go_to_check_out(update: Update, context: CallbackContext) -> str:
+    cake_repr = context.user_data['cake_repr']
+    update.callback_query.message.reply_photo(
+        cake_repr.cake.image_link, str(cake_repr)
+    )
+    buttons = [
+        [
+            InlineKeyboardButton(text='Принять', callback_data=str('ACCEPT')),
+        ],
+        [
+            InlineKeyboardButton(text='Отказаться', callback_data=str('-1')),
+        ],
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.message.reply_text(
+        '⚠️ Продолжая, Вы соглашаетсь на обработку персональных данных',
+        reply_markup=keyboard,
+    )
+
+
+def submit_accept(update: Update, context: CallbackContext) -> str:
+    delivery_guy = 'https://xn----jtbnbixdby0fq.xn--p1ai/pics/5.png'
+    update.callback_query.message.reply_photo(delivery_guy)
 
 
 def main():
@@ -321,16 +416,16 @@ def main():
             'SELECTING_FEATURES': [
                 CallbackQueryHandler(add_berries, pattern='^berries$'),
                 CallbackQueryHandler(add_decor, pattern='^decor$'),
-                CallbackQueryHandler(
-                    make_signature, pattern='^signature$'
-                ),
+                CallbackQueryHandler(make_signature, pattern='^signature$'),
                 CallbackQueryHandler(add_extra_ingredient, pattern='^add'),
                 CallbackQueryHandler(end, pattern='^-1$'),
+                CallbackQueryHandler(go_to_check_out, pattern='^check_out$'),
+                CallbackQueryHandler(submit_accept, pattern='^ACCEPT$'),
             ],
             'TYPING': [MessageHandler(Filters.text, add_signature)],
         },
         fallbacks=[],
-        map_to_parent={-1: 'CUSTOMIZATION'}
+        map_to_parent={-1: 'CUSTOMIZATION'},
     )
 
     # top level conversation handler
@@ -344,8 +439,11 @@ def main():
                 CallbackQueryHandler(
                     create_custom_cake, pattern='^CUSTOM_CAKE$'
                 ),
+                CallbackQueryHandler(about_us, pattern='^ABOUT_US$'),
+                CallbackQueryHandler(go_main, pattern='^MAIN$'),
                 CallbackQueryHandler(end, pattern='^-1$'),
             ],
+            'CHECK_OUT': [],
             'CUSTOMIZATION': [customization_handler],
         },
         fallbacks=[CommandHandler('stop', stop)],
