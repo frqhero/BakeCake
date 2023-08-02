@@ -43,4 +43,5 @@ CATS = [
     'https://balthazar.club/uploads/posts/2022-10/1666112669_4-balthazar-club-p-kotik-i-tortik-instagram-5.jpg',
     'https://balthazar.club/uploads/posts/2022-10/thumbs/1666112743_10-balthazar-club-p-kotik-i-tortik-instagram-11.jpg',
     'https://naurok-test2.nyc3.digitaloceanspaces.com/uploads/test/3652012/1691133/451133_1664952313.jpg',
+    'https://animals.pibig.info/uploads/posts/2023-03/thumbs/1680263032_animals-pibig-info-p-kotenok-shipit-zhivotnie-instagram-1.jpg',
 ]
