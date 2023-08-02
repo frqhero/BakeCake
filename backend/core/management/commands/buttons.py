@@ -16,3 +16,23 @@ title = 'Добро пожаловать в Bake Cake!'
 info = 'В нашем магазине вы можете выбрать готовый торт или собрать свой!'
 
 WELCOME_TEXT = title + '\n\n' + info
+
+CUSTOMIZATION_LAYOUT = [
+        [
+            InlineKeyboardButton(
+                text='Добавить ягоды', callback_data=str('berries')
+            ),
+            InlineKeyboardButton(
+                text='Добавить декор', callback_data=str('decor')
+            ),
+            InlineKeyboardButton(
+                text='Сделать надпись', callback_data=str('signature')
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='Перейти к оформлению заказа',
+                callback_data=str('check_out'),
+            ),
+        ],
+    ]
