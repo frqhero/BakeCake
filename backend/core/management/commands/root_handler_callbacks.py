@@ -1,7 +1,7 @@
 from telegram import Update, MessageEntity, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 
-from .buttons import MAIN_LAYOUT, WELCOME_TEXT
+from .buttons import MAIN_LAYOUT, WELCOME_TEXT, send_cat
 from ...models import Cake, AboutUs
 
 
