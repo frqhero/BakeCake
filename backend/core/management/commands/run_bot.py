@@ -1,4 +1,3 @@
-from textwrap import dedent
 import logging
 import os
 
@@ -69,9 +68,8 @@ def start(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
     title = 'Добро пожаловать в Bake Cake!'
     info = 'В нашем магазине вы можете выбрать готовый торт или собрать свой!'
-    ending = 'Для завершения нажмите "Отменить" или наберите /stop'
 
-    text = title + '\n\n' + info + '\n\n' + ending
+    text = title + '\n\n' + info
 
     buttons = [
         [
@@ -82,9 +80,6 @@ def start(update: Update, context: CallbackContext) -> str:
                 text='Соберите свой', callback_data=str('CUSTOM_CAKE')
             ),
             InlineKeyboardButton(text='О нас', callback_data=str('ABOUT_US')),
-        ],
-        [
-            InlineKeyboardButton(text='Отменить', callback_data=str('-1')),
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
@@ -205,13 +200,6 @@ def stop(update: Update, context: CallbackContext) -> int:
     return -1
 
 
-def end(update: Update, context: CallbackContext) -> int:
-    update.callback_query.answer('Удаляем беседу тогда...')
-    update.callback_query.delete_message()
-
-    return -1
-
-
 def offer_custom(update: Update, context: CallbackContext) -> str:
     # say great choice, add choice to user data, offer customization
     _, cake_pk = update.callback_query.data.split()
@@ -264,7 +252,6 @@ def add_berries(update: Update, context: CallbackContext) -> str:
         buttons_row,
         [
             InlineKeyboardButton(
-                text='Вернуться к выбору торта', callback_data=-1
             ),
         ],
     ]
@@ -285,7 +272,6 @@ def add_decor(update: Update, context: CallbackContext) -> str:
     buttons_row.append(
         [
             InlineKeyboardButton(
-                text='Вернуться к выбору торта', callback_data=-1
             ),
         ]
     )
@@ -441,7 +427,6 @@ def main():
                 ),
                 CallbackQueryHandler(about_us, pattern='^ABOUT_US$'),
                 CallbackQueryHandler(go_main, pattern='^MAIN$'),
-                CallbackQueryHandler(end, pattern='^-1$'),
             ],
             'CHECK_OUT': [],
             'CUSTOMIZATION': [customization_handler],
