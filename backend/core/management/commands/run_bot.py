@@ -25,7 +25,6 @@ django.setup()
 
 from ...models import Cake, Berry, Decor, AboutUs
 
-END = ConversationHandler.END
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -34,7 +33,7 @@ logging.basicConfig(
 
 
 class CakeRepresentation:
-    def __init__(self, cake, berries=None, decor=None, signature=None, comment=None):
+    def __init__(self, cake, berries=None, decor=None, signature=None):
         self.cake = cake
         if not berries:
             self.berries = []
@@ -42,14 +41,9 @@ class CakeRepresentation:
             self.decor = []
         if not signature:
             self.signature = []
-        if not comment:
-            self.comment = []
 
     def add_signature(self, signature):
         self.signature.append(signature)
-
-    def offer_choice(self, comment):
-        self.comment.append(comment)
 
     def __str__(self):
         main_text = f'{self.cake.title}\n\n{self.cake.description}'
@@ -67,10 +61,6 @@ class CakeRepresentation:
             joined_signatures = ', '.join(self.signature)
             signature_string = f'\n\nДобавленные надписи: {joined_signatures}'
             main_text += signature_string
-        if self.comment:
-            joined_comment = ', '.join(self.comment)
-            comment_string = f'\n\nДобавленные комментарии: {joined_comment}'
-            main_text += comment_string
         return main_text
 
 
@@ -273,8 +263,7 @@ def add_berries(update: Update, context: CallbackContext) -> str:
         buttons_row,
         [
             InlineKeyboardButton(
-                text='Перейти к оформлению заказа',
-                callback_data=str('check_out'),
+
             ),
         ],
     ]
@@ -295,8 +284,6 @@ def add_decor(update: Update, context: CallbackContext) -> str:
     buttons_row.append(
         [
             InlineKeyboardButton(
-                text='Перейти к оформлению заказа',
-                callback_data=str('check_out'),
             ),
         ]
     )
@@ -312,15 +299,7 @@ def make_signature(update: Update, context: CallbackContext) -> str:
         'Введите желаемую надпись:'
     )
 
-    return 'TYPING_SIGNATURE'
-
-
-def leave_comment(update: Update, context: CallbackContext) -> str:
-    update.callback_query.edit_message_reply_markup()
-    update.callback_query.message.reply_text(
-        'Введите желаемый комментарий:'
-    )
-    return 'TYPING_COMMENT'
+    return 'TYPING'
 
 
 def add_signature(update: Update, context: CallbackContext) -> str:
@@ -346,8 +325,7 @@ def add_signature(update: Update, context: CallbackContext) -> str:
         ],
         [
             InlineKeyboardButton(
-                text='Перейти к оформлению заказа',
-                callback_data=str('check_out'),
+                text='Вернуться к выбору торта', callback_data=-1
             ),
         ],
     ]
@@ -403,7 +381,7 @@ def add_extra_ingredient(update: Update, context: CallbackContext) -> str:
 def go_to_check_out(update: Update, context: CallbackContext) -> str:
     cake_repr = context.user_data['cake_repr']
     update.callback_query.message.reply_photo(
-        cake_repr.cake.image_link, f'{cake_repr.cake.price}р\n' f'{cake_repr}'
+        cake_repr.cake.image_link, str(cake_repr)
     )
     buttons = [
         [
@@ -422,92 +400,7 @@ def go_to_check_out(update: Update, context: CallbackContext) -> str:
 
 def submit_accept(update: Update, context: CallbackContext) -> str:
     delivery_guy = 'https://xn----jtbnbixdby0fq.xn--p1ai/pics/5.png'
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text='Курьер', callback_data=str('courier')
-            ),
-            InlineKeyboardButton(
-                text='Самовывоз', callback_data=str('pickup')
-            ),
-        ],
-        [
-            InlineKeyboardButton(text='Отказаться', callback_data=str('-1')),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.message.reply_photo(
-        delivery_guy,
-        caption='Выберите способ доставки',
-        reply_markup=keyboard
-    )
-
-
-def go_to_delivery(update: Update, context: CallbackContext) -> str:
-    buttons = [
-        [
-            InlineKeyboardButton(text='Да', callback_data=str('YES')),
-        ],
-        [
-            InlineKeyboardButton(text='Нет', callback_data=str('NO')),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.message.reply_text(
-        text='Хотите оставить комментарий?',
-        reply_markup=keyboard
-    )
-
-
-def offer_choice(update: Update, context: CallbackContext) -> int:
-    comment = update.message.text
-    cake_repr = context.user_data['cake_repr']
-    if comment:
-        cake_repr.offer_choice(comment)
-    update.message.reply_photo(
-        cake_repr.cake.image_link, f'{cake_repr.cake.price}р\n' f'{cake_repr}'
-    )
-    buttons = [
-        [
-            InlineKeyboardButton(text='На главную', callback_data=str(END)),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    update.message.reply_text(
-        'Всего доброго!\n'
-        'Благодарим за заказ',
-        reply_markup=keyboard,
-    )
-
-    return END
-
-
-def complete_order(update: Update, context: CallbackContext) -> int:
-    cake_repr = context.user_data['cake_repr']
-    update.callback_query.message.reply_photo(
-        cake_repr.cake.image_link, f'{cake_repr.cake.price}р\n' f'{cake_repr}'
-    )
-    buttons = [
-        [
-            InlineKeyboardButton(text='На главную', callback_data=str(END)),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-    update.callback_query.message.reply_text(
-        'Всего доброго!\n'
-        'Благодарим за заказ',
-        reply_markup=keyboard,
-    )
-
-    return END
-
-
-def start_over(update: Update, context: CallbackContext) -> int:
-    """Return to top level conversation."""
-    context.user_data['START_OVER'] = True
-    start(update, context)
-
-    return END
+    update.callback_query.message.reply_photo(delivery_guy)
 
 
 def main():
@@ -526,18 +419,8 @@ def main():
                 CallbackQueryHandler(end_over, pattern='^-1$'),
                 CallbackQueryHandler(go_to_check_out, pattern='^check_out$'),
                 CallbackQueryHandler(submit_accept, pattern='^ACCEPT$'),
-                CallbackQueryHandler(go_to_delivery, pattern='^pickup$'),
-                CallbackQueryHandler(complete_order, pattern='^NO$'),
-                CallbackQueryHandler(leave_comment, pattern='^YES$'),
             ],
-            'TYPING_SIGNATURE': [MessageHandler(Filters.text, add_signature)],
-            'TYPING_COMMENT': [MessageHandler(Filters.text, offer_choice)],
-        },
-        fallbacks=[
-            CallbackQueryHandler(start_over, pattern='^' + str(END) + '$')
-        ],
-        map_to_parent={
-            -1: 'CUSTOMIZATION',
+            'TYPING': [MessageHandler(Filters.text, add_signature)],
         },
     )
 
