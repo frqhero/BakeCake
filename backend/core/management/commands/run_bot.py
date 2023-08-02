@@ -204,7 +204,7 @@ def stop(update: Update, context: CallbackContext) -> int:
     return -1
 
 
-def end_over(update: Update, context: CallbackContext) -> int:
+def end(update: Update, context: CallbackContext) -> int:
     update.callback_query.answer('Удаляем беседу тогда...')
     update.callback_query.delete_message()
 
@@ -263,7 +263,6 @@ def add_berries(update: Update, context: CallbackContext) -> str:
         buttons_row,
         [
             InlineKeyboardButton(
-
             ),
         ],
     ]
@@ -416,12 +415,14 @@ def main():
                 CallbackQueryHandler(add_decor, pattern='^decor$'),
                 CallbackQueryHandler(make_signature, pattern='^signature$'),
                 CallbackQueryHandler(add_extra_ingredient, pattern='^add'),
-                CallbackQueryHandler(end_over, pattern='^-1$'),
+                CallbackQueryHandler(end, pattern='^-1$'),
                 CallbackQueryHandler(go_to_check_out, pattern='^check_out$'),
                 CallbackQueryHandler(submit_accept, pattern='^ACCEPT$'),
             ],
             'TYPING': [MessageHandler(Filters.text, add_signature)],
         },
+        fallbacks=[],
+        map_to_parent={-1: 'CUSTOMIZATION'},
     )
 
     # top level conversation handler
@@ -437,7 +438,7 @@ def main():
                 ),
                 CallbackQueryHandler(about_us, pattern='^ABOUT_US$'),
                 CallbackQueryHandler(go_main, pattern='^MAIN$'),
-                CallbackQueryHandler(end_over, pattern='^-1$'),
+                CallbackQueryHandler(end, pattern='^-1$'),
             ],
             'CHECK_OUT': [],
             'CUSTOMIZATION': [customization_handler],
