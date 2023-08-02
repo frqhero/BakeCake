@@ -1,3 +1,5 @@
+from random import choice
+
 from telegram import InlineKeyboardButton
 
 MAIN_LAYOUT = [
@@ -32,7 +34,7 @@ CUSTOMIZATION_LAYOUT = [
         [
             InlineKeyboardButton(
                 text='Перейти к оформлению заказа',
-                callback_data=str('check_out'),
+                callback_data=str('checkout'),
             ),
         ],
     ]
@@ -45,3 +47,8 @@ CATS = [
     'https://naurok-test2.nyc3.digitaloceanspaces.com/uploads/test/3652012/1691133/451133_1664952313.jpg',
     'https://animals.pibig.info/uploads/posts/2023-03/thumbs/1680263032_animals-pibig-info-p-kotenok-shipit-zhivotnie-instagram-1.jpg',
 ]
+
+
+def send_cat(update):
+    cat = choice(CATS)
+    update.message.reply_photo(cat)
