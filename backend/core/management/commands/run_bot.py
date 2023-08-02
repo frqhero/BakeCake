@@ -209,10 +209,6 @@ def add_berries(update: Update, context: CallbackContext) -> str:
     ]
     buttons = [
         buttons_row,
-        [
-            InlineKeyboardButton(
-            ),
-        ],
     ]
 
     keyboard = InlineKeyboardMarkup(buttons)
@@ -220,7 +216,7 @@ def add_berries(update: Update, context: CallbackContext) -> str:
 
 
 def add_decor(update: Update, context: CallbackContext) -> str:
-    buttons_row = [
+    buttons = [
         [
             InlineKeyboardButton(
                 text=decor.title, callback_data=str(f'add decor {decor.slug}')
@@ -228,14 +224,8 @@ def add_decor(update: Update, context: CallbackContext) -> str:
         ]
         for decor in Decor.objects.all()
     ]
-    buttons_row.append(
-        [
-            InlineKeyboardButton(
-            ),
-        ]
-    )
 
-    keyboard = InlineKeyboardMarkup(buttons_row)
+    keyboard = InlineKeyboardMarkup(buttons)
     update.callback_query.edit_message_reply_markup(keyboard)
 
 
