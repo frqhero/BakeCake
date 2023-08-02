@@ -1,3 +1,4 @@
+from random import choice
 import logging
 import os
 
@@ -20,7 +21,7 @@ from telegram.ext import (
 )
 import django
 
-from .buttons import MAIN_LAYOUT, WELCOME_TEXT, CUSTOMIZATION_LAYOUT
+from .buttons import MAIN_LAYOUT, WELCOME_TEXT, CUSTOMIZATION_LAYOUT, CATS
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
@@ -66,6 +67,12 @@ class CakeRepresentation:
             signature_string = f'\n\nДобавленные надписи: {joined_signatures}'
             main_text += signature_string
         return main_text
+
+
+def send_cat(update):
+    cat = choice(CATS)
+    print(cat)
+    update.message.reply_photo(cat)
 
 
 def start(update: Update, context: CallbackContext) -> str:
@@ -152,9 +159,7 @@ def go_main(update: Update, context: CallbackContext) -> str:
 
 def stop(update: Update, context: CallbackContext) -> int:
     """End Conversation by command."""
-    update.message.reply_photo(
-        'https://animals.pibig.info/uploads/posts/2023-03/thumbs/1680263032_animals-pibig-info-p-kotenok-shipit-zhivotnie-instagram-1.jpg'
-    )
+    send_cat(update)
 
     return -1
 
@@ -298,7 +303,7 @@ def submit_accept(update: Update, context: CallbackContext) -> str:
 
 def stop_nested(update: Update, context: CallbackContext) -> str:
     """Completely end conversation from within nested conversation."""
-    update.message.reply_text('Okay, bye.')
+    send_cat(update)
 
     return 'STOPPING'
 

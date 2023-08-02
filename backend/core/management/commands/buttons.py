@@ -36,3 +36,11 @@ CUSTOMIZATION_LAYOUT = [
             ),
         ],
     ]
+
+
+CATS = [
+    'https://balthazar.club/uploads/posts/2022-10/thumbs/1666112702_2-balthazar-club-p-kotik-i-tortik-instagram-2.jpg',
+    'https://balthazar.club/uploads/posts/2022-10/1666112669_4-balthazar-club-p-kotik-i-tortik-instagram-5.jpg',
+    'https://balthazar.club/uploads/posts/2022-10/thumbs/1666112743_10-balthazar-club-p-kotik-i-tortik-instagram-11.jpg'
+    'https://naurok-test2.nyc3.digitaloceanspaces.com/uploads/test/3652012/1691133/451133_1664952313.jpg',
+]
