@@ -20,7 +20,7 @@ from telegram.ext import (
 )
 import django
 
-from .buttons import MAIN_LAYOUT
+from .buttons import MAIN_LAYOUT, WELCOME_TEXT
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
@@ -70,17 +70,12 @@ class CakeRepresentation:
 
 def start(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
-    title = 'Добро пожаловать в Bake Cake!'
-    info = 'В нашем магазине вы можете выбрать готовый торт или собрать свой!'
-
-    text = title + '\n\n' + info
-
     keyboard = InlineKeyboardMarkup(MAIN_LAYOUT)
 
     if context.user_data.get('START_OVER'):
         update.callback_query.answer()
         update.callback_query.edit_message_text(
-            text=text,
+            text=WELCOME_TEXT,
             reply_markup=keyboard,
         )
     else:
@@ -89,7 +84,7 @@ def start(update: Update, context: CallbackContext) -> str:
         )
         update.message.reply_photo(
             'https://www.ilovecake.ru/data/images/designer-cake.png',
-            caption=text,
+            caption=WELCOME_TEXT,
             reply_markup=keyboard,
             caption_entities=[bold_entity],
         )
@@ -154,16 +149,11 @@ def about_us(update: Update, context: CallbackContext) -> str:
 
 
 def go_main(update: Update, context: CallbackContext) -> str:
-    title = 'Добро пожаловать в Bake Cake!'
-    info = 'В нашем магазине вы можете выбрать готовый торт или собрать свой!'
-    ending = 'Для завершения нажмите "Отменить" или наберите /stop'
-
-    text = title + '\n\n' + info + '\n\n' + ending
 
     keyboard = InlineKeyboardMarkup(MAIN_LAYOUT)
     bold_entity = MessageEntity(type=MessageEntity.BOLD, offset=0, length=29)
     update.callback_query.edit_message_caption(
-        text, reply_markup=keyboard, caption_entities=[bold_entity]
+        WELCOME_TEXT, reply_markup=keyboard, caption_entities=[bold_entity]
     )
 
 
