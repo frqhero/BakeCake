@@ -132,13 +132,7 @@ def about_us(update: Update, context: CallbackContext) -> str:
 
     buttons = [
         [
-            InlineKeyboardButton(
-                text='Готовый', callback_data=str('COMPLETE_CAKE')
-            ),
-            InlineKeyboardButton(
-                text='Соберите свой', callback_data=str('CUSTOM_CAKE')
-            ),
-            InlineKeyboardButton(text='Главная', callback_data=str('MAIN')),
+            InlineKeyboardButton(text='Назад', callback_data=str('MAIN')),
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
@@ -149,7 +143,6 @@ def about_us(update: Update, context: CallbackContext) -> str:
 
 
 def go_main(update: Update, context: CallbackContext) -> str:
-
     keyboard = InlineKeyboardMarkup(MAIN_LAYOUT)
     bold_entity = MessageEntity(type=MessageEntity.BOLD, offset=0, length=29)
     update.callback_query.edit_message_caption(
