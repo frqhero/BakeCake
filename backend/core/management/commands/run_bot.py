@@ -20,10 +20,14 @@ from telegram.ext import (
 )
 import django
 
+from .buttons import MAIN_LAYOUT
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 from ...models import Cake, Berry, Decor, AboutUs
+
+
 
 
 logging.basicConfig(
@@ -71,18 +75,7 @@ def start(update: Update, context: CallbackContext) -> str:
 
     text = title + '\n\n' + info
 
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text='Готовый', callback_data=str('COMPLETE_CAKE')
-            ),
-            InlineKeyboardButton(
-                text='Соберите свой', callback_data=str('CUSTOM_CAKE')
-            ),
-            InlineKeyboardButton(text='О нас', callback_data=str('ABOUT_US')),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
+    keyboard = InlineKeyboardMarkup(MAIN_LAYOUT)
 
     if context.user_data.get('START_OVER'):
         update.callback_query.answer()
@@ -152,9 +145,6 @@ def about_us(update: Update, context: CallbackContext) -> str:
             ),
             InlineKeyboardButton(text='Главная', callback_data=str('MAIN')),
         ],
-        [
-            InlineKeyboardButton(text='Отменить', callback_data=str('-1')),
-        ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
 
@@ -170,21 +160,7 @@ def go_main(update: Update, context: CallbackContext) -> str:
 
     text = title + '\n\n' + info + '\n\n' + ending
 
-    buttons = [
-        [
-            InlineKeyboardButton(
-                text='Готовый', callback_data=str('COMPLETE_CAKE')
-            ),
-            InlineKeyboardButton(
-                text='Соберите свой', callback_data=str('CUSTOM_CAKE')
-            ),
-            InlineKeyboardButton(text='О нас', callback_data=str('ABOUT_US')),
-        ],
-        [
-            InlineKeyboardButton(text='Отменить', callback_data=str('-1')),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
+    keyboard = InlineKeyboardMarkup(MAIN_LAYOUT)
     bold_entity = MessageEntity(type=MessageEntity.BOLD, offset=0, length=29)
     update.callback_query.edit_message_caption(
         text, reply_markup=keyboard, caption_entities=[bold_entity]
@@ -404,7 +380,6 @@ def main():
                 CallbackQueryHandler(add_decor, pattern='^decor$'),
                 CallbackQueryHandler(make_signature, pattern='^signature$'),
                 CallbackQueryHandler(add_extra_ingredient, pattern='^add'),
-                CallbackQueryHandler(end, pattern='^-1$'),
                 CallbackQueryHandler(go_to_check_out, pattern='^check_out$'),
                 CallbackQueryHandler(submit_accept, pattern='^ACCEPT$'),
             ],
