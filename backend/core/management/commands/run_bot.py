@@ -71,7 +71,6 @@ class CakeRepresentation:
 
 def send_cat(update):
     cat = choice(CATS)
-    print(cat)
     update.message.reply_photo(cat)
 
 
