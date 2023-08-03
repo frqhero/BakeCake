@@ -1,32 +1,40 @@
 from telegram import Update, MessageEntity, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 
-from .buttons import MAIN_LAYOUT, WELCOME_TEXT, send_cat
+from .buttons import MAIN_LAYOUT, WELCOME_TEXT, send_cat, LOGO
 from ...models import Cake, AboutUs
 
 
 def start(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
-    keyboard = InlineKeyboardMarkup(MAIN_LAYOUT)
-
-    if context.user_data.get('START_OVER'):
-        update.callback_query.answer()
-        update.callback_query.edit_message_text(
-            text=WELCOME_TEXT,
-            reply_markup=keyboard,
-        )
-    else:
-        bold_entity = MessageEntity(
-            type=MessageEntity.BOLD, offset=0, length=29
-        )
+    bold_entity = MessageEntity(
+        type=MessageEntity.BOLD, offset=0, length=29
+    )
+    came_from = context.user_data.get('came_from')
+    if not came_from:
         update.message.reply_photo(
             'https://www.ilovecake.ru/data/images/designer-cake.png',
             caption=WELCOME_TEXT,
-            reply_markup=keyboard,
+            reply_markup=MAIN_LAYOUT,
             caption_entities=[bold_entity],
         )
+    elif came_from == 'disagree':
+        update.callback_query.answer()
+        update.callback_query.message.reply_photo(
+            LOGO,
+            caption=WELCOME_TEXT,
+            reply_markup=MAIN_LAYOUT,
+            caption_entities=[bold_entity],
+        )
+    elif came_from == 'go_main':
+        update.callback_query.answer()
+        update.callback_query.edit_message_caption(
+            WELCOME_TEXT,
+            reply_markup=MAIN_LAYOUT,
+            caption_entities=[bold_entity]
+        )
 
-    context.user_data['START_OVER'] = False
+    context.user_data['came_from'] = None
     return 'SELECTING_SCENARIO'
 
 
@@ -88,9 +96,5 @@ def about_us(update: Update, context: CallbackContext) -> str:
 
 
 def go_main(update: Update, context: CallbackContext) -> str:
-    keyboard = InlineKeyboardMarkup(MAIN_LAYOUT)
-    bold_entity = MessageEntity(type=MessageEntity.BOLD, offset=0, length=29)
-    update.callback_query.edit_message_caption(
-        WELCOME_TEXT, reply_markup=keyboard, caption_entities=[bold_entity]
-    )
-
+    context.user_data['came_from'] = 'go_main'
+    start(update, context)

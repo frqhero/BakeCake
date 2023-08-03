@@ -31,12 +31,10 @@ from .root_handler_callbacks import (
     go_main,
 )
 
-
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 from ...models import Cake, Berry, Decor
-
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -44,7 +42,8 @@ logging.basicConfig(
 )
 
 
-def add_customizations(update: Update, context: CallbackContext, came_from=None) -> str:
+def add_customizations(
+    update: Update, context: CallbackContext) -> str:
     # if callback_query and 3 - after adding ingredient
     # if callback_query and 2 = after selecting complete cake
     # if not callback_query - after typing
@@ -59,15 +58,6 @@ def add_customizations(update: Update, context: CallbackContext, came_from=None)
             cake = Cake.objects.get(pk=cake_pk)
             cake_repr = CakeRepresentation(cake)
             context.user_data['cake_repr'] = cake_repr
-            update.callback_query.message.reply_photo(
-                cake.image_link,
-                str(cake_repr),
-                caption_entities=[cake_repr.bold_entity],
-                reply_markup=keyboard,
-            )
-        elif came_from == 'disagree':
-            cake_repr = context.user_data['cake_repr']
-            cake = cake_repr.cake
             update.callback_query.message.reply_photo(
                 cake.image_link,
                 str(cake_repr),
@@ -181,11 +171,16 @@ def ask_for_terms_agreement(update: Update, context: CallbackContext) -> str:
         ],
     ]
     keyboard = InlineKeyboardMarkup(buttons)
-    asd = MessageEntity(MessageEntity.TEXT_LINK, offset=17, length=12, url='https://kpmg.com/kz/ru/home/misc/personal-data.html')
+    url = MessageEntity(
+        MessageEntity.TEXT_LINK,
+        offset=17,
+        length=12,
+        url='https://kpmg.com/kz/ru/home/misc/personal-data.html',
+    )
     update.callback_query.message.reply_text(
         '⚠️ Продолжая, Вы соглашаетесь на обработку персональных данных.',
         reply_markup=keyboard,
-        entities=[asd]
+        entities=[url],
     )
 
     return 'ACCEPTING_TERMS'
@@ -193,18 +188,29 @@ def ask_for_terms_agreement(update: Update, context: CallbackContext) -> str:
 
 def select_shipping(update: Update, context: CallbackContext) -> str:
     delivery_guy = 'https://xn----jtbnbixdby0fq.xn--p1ai/pics/5.png'
-    update.callback_query.message.reply_photo(delivery_guy)
     # buttons for shipping
+    buttons = [
+        [
+            InlineKeyboardButton(text='Доставка', callback_data='delivery'),
+            InlineKeyboardButton(text='Самовывоз', callback_data='pickup'),
+        ],
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+    update.callback_query.message.reply_photo(
+        delivery_guy, reply_markup=keyboard
+    )
 
     return 'SELECTING_SHIPPING'
 
 
-def return_to_customization(update: Update, context: CallbackContext) -> str:
-    update.callback_query.message.reply_text('К сожалению мы не можем оформить заказ без Вашего разрешения :(')
+def return_to_start(update: Update, context: CallbackContext) -> str:
+    update.callback_query.message.reply_text(
+        'К сожалению мы не можем оформить заказ без Вашего разрешения :('
+    )
+    context.user_data['came_from'] = 'disagree'
+    start(update, context)
 
-    return add_customizations(update, context, 'disagree')
-
-
+    return 'DISAGREE'
 
 
 def stop_nested(update: Update, context: CallbackContext) -> str:
@@ -214,12 +220,28 @@ def stop_nested(update: Update, context: CallbackContext) -> str:
     return 'STOPPING'
 
 
+def random (update: Update, context: CallbackContext) -> str:
+    update.message.reply_text('asd')
+
+
 def main():
     tg_bot_token = settings.TG_BOT_TOKEN
     updater = Updater(token=tg_bot_token)
     dispatcher = updater.dispatcher
 
-    shipping_handler = []
+    shipping_handler = ConversationHandler(
+        entry_points=[
+            CallbackQueryHandler(select_shipping, pattern='^agree'),
+            CallbackQueryHandler(
+                return_to_start, pattern='^disagree'
+            )
+        ],
+        states={},
+        fallbacks=[],
+        map_to_parent={
+            'DISAGREE': 'SELECTING_SCENARIO'
+        }
+    )
 
     customization_handler = ConversationHandler(
         entry_points=[
@@ -238,15 +260,11 @@ def main():
                 CallbackQueryHandler(add_ingredient, pattern='^add'),
             ],
             'TYPING': [MessageHandler(Filters.text, add_signature)],
-            'ACCEPTING_TERMS': [
-                CallbackQueryHandler(select_shipping, pattern='^agree'),
-                CallbackQueryHandler(return_to_customization, pattern='^disagree')
-            ],
-            'SELECTING_SHIPPING': [shipping_handler],
         },
         fallbacks=[CommandHandler('stop', stop_nested)],
         map_to_parent={
             'STOPPING': -1,
+            'ACCEPTING_TERMS': 'ACCEPTING_TERMS',
         },
     )
 
@@ -262,8 +280,8 @@ def main():
                 CallbackQueryHandler(about_us, pattern='^ABOUT_US$'),
                 CallbackQueryHandler(go_main, pattern='^MAIN$'),
             ],
-            'CHECK_OUT': [],
             'SELECTING_CAKE': [customization_handler],
+            'ACCEPTING_TERMS': [shipping_handler]
         },
         fallbacks=[CommandHandler('stop', stop)],
     )

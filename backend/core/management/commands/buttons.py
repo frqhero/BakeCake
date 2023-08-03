@@ -1,8 +1,8 @@
 from random import choice
 
-from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-MAIN_LAYOUT = [
+MAIN_LAYOUT = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
                 text='Готовый', callback_data=str('COMPLETE_CAKE')
@@ -11,8 +11,9 @@ MAIN_LAYOUT = [
                 text='Соберите свой', callback_data=str('CUSTOM_CAKE')
             ),
             InlineKeyboardButton(text='О нас', callback_data=str('ABOUT_US')),
-        ],
+        ]
     ]
+)
 
 title = 'Добро пожаловать в Bake Cake!'
 info = 'В нашем магазине вы можете выбрать готовый торт или собрать свой!'
@@ -47,6 +48,8 @@ CATS = [
     'https://naurok-test2.nyc3.digitaloceanspaces.com/uploads/test/3652012/1691133/451133_1664952313.jpg',
     'https://animals.pibig.info/uploads/posts/2023-03/thumbs/1680263032_animals-pibig-info-p-kotenok-shipit-zhivotnie-instagram-1.jpg',
 ]
+
+LOGO = 'https://www.ilovecake.ru/data/images/designer-cake.png'
 
 
 def send_cat(update):
