@@ -47,31 +47,31 @@ def add_customizations(
     # if callback_query and 3 - after adding ingredient
     # if callback_query and 2 = after selecting complete cake
     # if not callback_query - after typing
+    update.callback_query.answer()
     keyboard = InlineKeyboardMarkup(CUSTOMIZATION_LAYOUT)
 
-    if update.callback_query:
-        user_choice = update.callback_query.data.split()
-        if len(user_choice) == 2:
-            # I need new message here
-            _, cake_pk = user_choice
+    user_choice = update.callback_query.data.split()
+    if len(user_choice) == 2:
+        # I need new message here
+        _, cake_pk = user_choice
 
-            cake = Cake.objects.get(pk=cake_pk)
-            cake_repr = CakeRepresentation(cake)
-            context.user_data['cake_repr'] = cake_repr
-            update.callback_query.message.reply_photo(
-                cake.image_link,
-                str(cake_repr),
-                caption_entities=[cake_repr.bold_entity],
-                reply_markup=keyboard,
-            )
-        else:
-            # I need edit message here
-            cake_repr = context.user_data['cake_repr']
-            update.callback_query.message.edit_caption(
-                str(cake_repr),
-                caption_entities=[cake_repr.bold_entity],
-                reply_markup=keyboard,
-            )
+        cake = Cake.objects.get(pk=cake_pk)
+        cake_repr = CakeRepresentation(cake)
+        context.user_data['cake_repr'] = cake_repr
+        update.callback_query.message.reply_photo(
+            cake.image_link,
+            str(cake_repr),
+            caption_entities=[cake_repr.bold_entity],
+            reply_markup=keyboard,
+        )
+    else:
+        # I need edit message here
+        cake_repr = context.user_data['cake_repr']
+        update.callback_query.message.edit_caption(
+            str(cake_repr),
+            caption_entities=[cake_repr.bold_entity],
+            reply_markup=keyboard,
+        )
 
     return 'SELECTING_CUSTOMIZATIONS_TYPE'
 
@@ -256,9 +256,10 @@ def main():
             ],
             'SELECTING_TIMESLOT': []
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler('stop', stop_nested)],
         map_to_parent={
-            'DISAGREE': 'SELECTING_SCENARIO'
+            'DISAGREE': 'SELECTING_SCENARIO',
+            'STOPPING': -1,
         }
     )
 
@@ -288,7 +289,7 @@ def main():
     )
 
     # top level conversation handler
-    conv_handler = ConversationHandler(
+    root_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
             'SELECTING_SCENARIO': [
@@ -305,7 +306,7 @@ def main():
         fallbacks=[CommandHandler('stop', stop)],
     )
 
-    dispatcher.add_handler(conv_handler)
+    dispatcher.add_handler(root_handler)
 
     updater.start_polling()
     updater.idle()

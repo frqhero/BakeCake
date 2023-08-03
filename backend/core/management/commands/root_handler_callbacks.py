@@ -1,4 +1,9 @@
-from telegram import Update, MessageEntity, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import (
+    Update,
+    MessageEntity,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 from telegram.ext import CallbackContext
 
 from .buttons import MAIN_LAYOUT, WELCOME_TEXT, send_cat, LOGO
@@ -7,13 +12,11 @@ from ...models import Cake, AboutUs
 
 def start(update: Update, context: CallbackContext) -> str:
     # send a message and then return select_cake_type
-    bold_entity = MessageEntity(
-        type=MessageEntity.BOLD, offset=0, length=29
-    )
+    bold_entity = MessageEntity(type=MessageEntity.BOLD, offset=0, length=29)
     came_from = context.user_data.get('came_from')
     if not came_from:
         update.message.reply_photo(
-            'https://www.ilovecake.ru/data/images/designer-cake.png',
+            LOGO,
             caption=WELCOME_TEXT,
             reply_markup=MAIN_LAYOUT,
             caption_entities=[bold_entity],
@@ -31,7 +34,7 @@ def start(update: Update, context: CallbackContext) -> str:
         update.callback_query.edit_message_caption(
             WELCOME_TEXT,
             reply_markup=MAIN_LAYOUT,
-            caption_entities=[bold_entity]
+            caption_entities=[bold_entity],
         )
 
     context.user_data['came_from'] = None
@@ -46,20 +49,24 @@ def stop(update: Update, context: CallbackContext) -> int:
 
 
 def select_cake(update: Update, context: CallbackContext) -> str:
+    update.callback_query.answer()
+
     cakes = Cake.objects.all()
 
     for cake in cakes:
         bold_entity = MessageEntity(
             type=MessageEntity.BOLD, offset=0, length=len(cake.title)
         )
-        buttons = [
+        keyboard = InlineKeyboardMarkup(
             [
-                InlineKeyboardButton(
-                    text='Выбрать', callback_data=str(f'complete {cake.pk}')
-                ),
-            ],
-        ]
-        keyboard = InlineKeyboardMarkup(buttons)
+                [
+                    InlineKeyboardButton(
+                        text='Выбрать',
+                        callback_data=str(f'complete {cake.pk}'),
+                    )
+                ]
+            ]
+        )
         update.callback_query.message.reply_photo(
             cake.image_link,
             cake.title
