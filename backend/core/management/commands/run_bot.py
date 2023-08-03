@@ -21,7 +21,7 @@ from telegram.ext import (
 import django
 
 from .cake_representation import CakeRepresentation
-from .buttons import CUSTOMIZATION_LAYOUT, send_cat
+from .buttons import CUSTOMIZATION_LAYOUT, send_cat, CAT_CHEF
 from .root_handler_callbacks import (
     start,
     stop,
@@ -200,7 +200,7 @@ def select_shipping(update: Update, context: CallbackContext) -> str:
         delivery_guy, reply_markup=keyboard
     )
 
-    return 'SELECTING_SHIPPING'
+    return 'SElECTING_SHIPPING'
 
 
 def return_to_start(update: Update, context: CallbackContext) -> str:
@@ -220,8 +220,22 @@ def stop_nested(update: Update, context: CallbackContext) -> str:
     return 'STOPPING'
 
 
-def random (update: Update, context: CallbackContext) -> str:
-    update.message.reply_text('asd')
+def select_timeslot(update: Update, context: CallbackContext) -> str:
+    timeslots = (
+        ('1', '10-12'),
+        ('2', '12-14'),
+        ('3', '14-16'),
+        ('4', '16-18'),
+        ('5', '18-20')
+    )
+    buttons = []
+    for num, timeslot in timeslots:
+        buttons.append([InlineKeyboardButton(timeslot, callback_data=num)])
+    keyboard = InlineKeyboardMarkup(buttons)
+
+    update.callback_query.message.reply_photo(CAT_CHEF, 'Ваш торт будет готов завтра :) Выберите время получения', reply_markup=keyboard)
+
+    return 'SELECTING_TIMESLOT'
 
 
 def main():
@@ -236,7 +250,12 @@ def main():
                 return_to_start, pattern='^disagree'
             )
         ],
-        states={},
+        states={
+            'SElECTING_SHIPPING': [
+                CallbackQueryHandler(select_timeslot, pattern='^delivery$|^pickup$')
+            ],
+            'SELECTING_TIMESLOT': []
+        },
         fallbacks=[],
         map_to_parent={
             'DISAGREE': 'SELECTING_SCENARIO'

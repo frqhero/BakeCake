@@ -45,7 +45,6 @@ def stop(update: Update, context: CallbackContext) -> int:
     return -1
 
 
-
 def select_cake(update: Update, context: CallbackContext) -> str:
     cakes = Cake.objects.all()
 

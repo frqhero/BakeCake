@@ -51,6 +51,7 @@ CATS = [
 
 LOGO = 'https://www.ilovecake.ru/data/images/designer-cake.png'
 
+CAT_CHEF = 'https://i.etsystatic.com/24476074/c/1993/1584/0/119/il/08ada3/2795064440/il_680x540.2795064440_cc73.jpg'
 
 def send_cat(update):
     cat = choice(CATS)
