@@ -1,4 +1,5 @@
 from django.db import models
+from telegram import MessageEntity
 
 
 class Cake(models.Model):
@@ -9,15 +10,37 @@ class Cake(models.Model):
     level = models.ForeignKey('Level', on_delete=models.CASCADE, null=True, blank=True)
     shape = models.ForeignKey('Shape', on_delete=models.CASCADE, null=True, blank=True)
     topping = models.ForeignKey('Topping', on_delete=models.CASCADE, null=True, blank=True)
-    berries = models.ManyToManyField('Berry', related_name='berries', blank=True)
+    berries = models.ManyToManyField('Berry', blank=True, symmetrical=False)
     decors = models.ManyToManyField('Decor', related_name='decors', blank=True)
     signature = models.CharField(max_length=100, blank=True)
     complete = models.BooleanField(default=False)
+    TIMESLOTS = (
+        ('1', '10-12'),
+        ('2', '12-14'),
+        ('3', '14-16'),
+        ('4', '16-18'),
+        ('5', '18-20'),
+    )
+    timeslot = models.IntegerField(choices=TIMESLOTS, default=1)
+
+    @property
+    def bold_entity(self):
+        return MessageEntity(
+            type=MessageEntity.BOLD, offset=0, length=len(self.title)
+        )
 
     def __str__(self):
         main_text = f'{self.title}\n{self.price} руб.\n\n{self.description}'
         berries = self.berries.all()
         decors = self.decors.all()
+        if self.level:
+            main_text += f'\n\n{self.level.title}'
+        else:
+            main_text += 'Количество уровней не указано'
+        if self.shape:
+            main_text += f'\n{self.shape.title}'
+        if self.topping:
+            main_text += f'\n{self.topping.title}'
         if berries:
             berry_names = [berry.title for berry in berries]
             joined_berry_names = ', '.join(berry_names)
@@ -29,7 +52,7 @@ class Cake(models.Model):
             decor_string = f'\n\nДобавленный декор: {joined_decor_name}'
             main_text += decor_string
         if self.signature:
-            signature_string = f'\n\nДобавленные надписи: {self.signature}'
+            signature_string = f'\n\nДобавленная надпись: {self.signature}'
             main_text += signature_string
         return main_text
 

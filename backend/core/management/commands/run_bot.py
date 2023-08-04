@@ -42,8 +42,7 @@ logging.basicConfig(
 )
 
 
-def add_customizations(
-    update: Update, context: CallbackContext) -> str:
+def add_customizations(update: Update, context: CallbackContext) -> str:
     # if callback_query and 3 - after adding ingredient
     # if callback_query and 2 = after selecting complete cake
     # if not callback_query - after typing
@@ -54,13 +53,11 @@ def add_customizations(
     if len(user_choice) == 2:
         # I need new message here
         _, cake_pk = user_choice
-
         cake = Cake.objects.get(pk=cake_pk)
-        clients_cake = Cake()
         cake_repr = CakeRepresentation(cake)
         context.user_data['cake_repr'] = cake_repr
         update.callback_query.message.reply_photo(
-            cake.image_link,
+            cake_repr.cake.image_link,
             str(cake_repr),
             caption_entities=[cake_repr.bold_entity],
             reply_markup=keyboard,
@@ -98,7 +95,7 @@ def add_decor(update: Update, context: CallbackContext) -> str:
     buttons = [
         [
             InlineKeyboardButton(
-                text=decor.title, callback_data=str(f'add decor {decor.slug}')
+                text=decor.title, callback_data=str(f'add decors {decor.slug}')
             )
         ]
         for decor in Decor.objects.all()
@@ -124,16 +121,13 @@ def add_signature(update: Update, context: CallbackContext) -> str:
     signature = update.message.text
     cake_repr = context.user_data['cake_repr']
     if signature:
-        cake_repr.add_signature(signature)
+        cake_repr.signature = signature
 
-    bold_entity = MessageEntity(
-        type=MessageEntity.BOLD, offset=0, length=len(cake_repr.cake.title)
-    )
     keyboard = InlineKeyboardMarkup(CUSTOMIZATION_LAYOUT)
     update.message.reply_photo(
         cake_repr.cake.image_link,
         str(cake_repr),
-        caption_entities=[bold_entity],
+        caption_entities=[cake_repr.bold_entity],
         reply_markup=keyboard,
     )
 
@@ -144,24 +138,19 @@ def add_ingredient(update: Update, context: CallbackContext) -> str:
     _, feature, ingredient = update.callback_query.data.split()
 
     if feature == 'berries':
-        obj = Berry.objects.get(slug=ingredient)
-    if feature == 'decor':
-        obj = Decor.objects.get(slug=ingredient)
+        ingredient_obj = Berry.objects.get(slug=ingredient)
+    if feature == 'decors':
+        ingredient_obj = Decor.objects.get(slug=ingredient)
 
     cake_repr = context.user_data['cake_repr']
-    features_list = getattr(cake_repr, feature)
-    features_list.append(obj)
 
-    # keyboard = InlineKeyboardMarkup(CUSTOMIZATION_LAYOUT)
-    # update.callback_query.message.edit_caption(
-    #     str(cake_repr), reply_markup=keyboard
-    # )
+    features_list = getattr(cake_repr, feature)
+    features_list.add(ingredient_obj)
 
     return add_customizations(update, context)
 
 
 def ask_for_terms_agreement(update: Update, context: CallbackContext) -> str:
-    cake_repr = context.user_data['cake_repr']
     update.callback_query.message.edit_reply_markup()
     buttons = [
         [
@@ -221,22 +210,76 @@ def stop_nested(update: Update, context: CallbackContext) -> str:
     return 'STOPPING'
 
 
-def select_timeslot(update: Update, context: CallbackContext) -> str:
-    timeslots = (
-        ('1', '10-12'),
-        ('2', '12-14'),
-        ('3', '14-16'),
-        ('4', '16-18'),
-        ('5', '18-20')
+def ask_type_address(update: Update, context: CallbackContext) -> str:
+    update.callback_query.message.reply_text(
+        'Напишите пожалуйста адрес доставки'
     )
+
+    return 'TYPING'
+
+
+def done_typing(update: Update, context: CallbackContext) -> str:
+    address = update.message.text
+    cake_repr = context.user_data['cake_repr']
+    cake_repr.address = address
+
+    'DONE_TYPING'
+
+
+def select_timeslot(update: Update, context: CallbackContext) -> str:
+    address = update.message.text
+    cake_repr = context.user_data['cake_repr']
+    cake_repr.address = address
+
     buttons = []
-    for num, timeslot in timeslots:
+    for num, timeslot in Cake.TIMESLOTS:
         buttons.append([InlineKeyboardButton(timeslot, callback_data=num)])
     keyboard = InlineKeyboardMarkup(buttons)
 
-    update.callback_query.message.reply_photo(CAT_CHEF, 'Ваш торт будет готов завтра :) Выберите время получения', reply_markup=keyboard)
+    ready_at = str(context.user_data['cake_repr'].ready_at)
 
-    return 'SELECTING_TIMESLOT'
+    update.message.reply_photo(
+        CAT_CHEF,
+        f'Ваш торт будет готов {ready_at} :) Выберите время получения',
+        reply_markup=keyboard,
+    )
+
+    return 'DONE_SHIPPING'
+
+
+def ask_for_comment(update: Update, context: CallbackContext) -> str:
+    context.user_data['cake_repr'].timeslot = update.callback_query.data
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton('Да', callback_data='yes'),
+                InlineKeyboardButton('Нет', callback_data='no'),
+            ]
+        ]
+    )
+    update.callback_query.message.reply_text(
+        'Отлично и напоследок, желаете оставить дополнительный комментарий к заказу?',
+        reply_markup=keyboard,
+    )
+
+    return 'ADDING_COMMENT'
+
+
+def ask_type_comment(update: Update, context: CallbackContext) -> str:
+    update.callback_query.message.reply_text('Пожалуйста напишите чтобы вы хотели чтобы мы знали еще о вашем заказе?')
+
+    return 'TYPING'
+
+
+def send_order(update: Update, context: CallbackContext) -> str:
+    update.callback_query.message.reply_text('sent')
+    return 'SENDING_ORDER'
+
+
+def write_comment(update: Update, context: CallbackContext) -> str:
+    send_order(update, context)
+
+    return 'SENDING_ORDER'
 
 
 def main():
@@ -244,24 +287,37 @@ def main():
     updater = Updater(token=tg_bot_token)
     dispatcher = updater.dispatcher
 
+    timeslot_n_comment = ConversationHandler(
+        entry_points=[CallbackQueryHandler(ask_for_comment, pattern='^\d$')],
+        states={
+            'ADDING_COMMENT': [
+                CallbackQueryHandler(ask_type_comment, pattern='^yes$'),
+                CallbackQueryHandler(send_order, pattern='^no$'),
+            ],
+            'TYPING': [MessageHandler(Filters.text, write_comment)],
+            'SENDING_ORDER': []
+        },
+        fallbacks={},
+    )
+
     shipping_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(select_shipping, pattern='^agree'),
-            CallbackQueryHandler(
-                return_to_start, pattern='^disagree'
-            )
+            CallbackQueryHandler(return_to_start, pattern='^disagree'),
         ],
         states={
             'SElECTING_SHIPPING': [
-                CallbackQueryHandler(select_timeslot, pattern='^delivery$|^pickup$')
+                CallbackQueryHandler(ask_type_address, pattern='^delivery$')
             ],
-            'SELECTING_TIMESLOT': []
+            'SELECTING_TIMESLOT': [],
+            'TYPING': [MessageHandler(Filters.text, select_timeslot)],
         },
         fallbacks=[CommandHandler('stop', stop_nested)],
         map_to_parent={
             'DISAGREE': 'SELECTING_SCENARIO',
             'STOPPING': -1,
-        }
+            'DONE_SHIPPING': 'SELECTING_TIMING',
+        },
     )
 
     customization_handler = ConversationHandler(
@@ -302,7 +358,8 @@ def main():
                 CallbackQueryHandler(go_main, pattern='^MAIN$'),
             ],
             'SELECTING_CAKE': [customization_handler],
-            'ACCEPTING_TERMS': [shipping_handler]
+            'ACCEPTING_TERMS': [shipping_handler],
+            'SELECTING_TIMING': [timeslot_n_comment],
         },
         fallbacks=[CommandHandler('stop', stop)],
     )

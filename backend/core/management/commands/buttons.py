@@ -47,6 +47,7 @@ CATS = [
     'https://balthazar.club/uploads/posts/2022-10/thumbs/1666112743_10-balthazar-club-p-kotik-i-tortik-instagram-11.jpg',
     'https://naurok-test2.nyc3.digitaloceanspaces.com/uploads/test/3652012/1691133/451133_1664952313.jpg',
     'https://animals.pibig.info/uploads/posts/2023-03/thumbs/1680263032_animals-pibig-info-p-kotenok-shipit-zhivotnie-instagram-1.jpg',
+    'https://media.istockphoto.com/id/471100840/photo/woman-threatens-cream-birthday-cake-with-toy-hand-gun.jpg?s=612x612&w=0&k=20&c=dvR8Yy_5JM9YIkskOZWoS6ghkijNCfmMMb9hZNWMg1A='
 ]
 
 LOGO = 'https://www.ilovecake.ru/data/images/designer-cake.png'

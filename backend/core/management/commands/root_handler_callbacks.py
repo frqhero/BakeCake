@@ -51,7 +51,7 @@ def stop(update: Update, context: CallbackContext) -> int:
 def select_cake(update: Update, context: CallbackContext) -> str:
     update.callback_query.answer()
 
-    cakes = Cake.objects.all()
+    cakes = Cake.objects.filter(complete=True)
 
     for cake in cakes:
         bold_entity = MessageEntity(
@@ -69,12 +69,7 @@ def select_cake(update: Update, context: CallbackContext) -> str:
         )
         update.callback_query.message.reply_photo(
             cake.image_link,
-            cake.title
-            + '\n'
-            + str(cake.price)
-            + ' руб.'
-            + '\n\n'
-            + cake.description,
+            str(cake),
             caption_entities=[bold_entity],
             reply_markup=keyboard,
         )
