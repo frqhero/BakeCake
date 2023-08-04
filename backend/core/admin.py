@@ -1,9 +1,24 @@
 from django.contrib import admin
-from .models import Cake, Berry, Decor, AboutUs
+from .models import Cake, Level, Topping, Shape, Berry, Decor, AboutUs
 
 
 @admin.register(Cake)
 class CakeAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Level)
+class LevelAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Topping)
+class ToppingAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Shape)
+class ShapeAdmin(admin.ModelAdmin):
     pass
 
 
