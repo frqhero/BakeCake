@@ -5,10 +5,14 @@ class Cake(models.Model):
     title = models.CharField(max_length=50)
     image_link = models.CharField(max_length=500)
     description = models.TextField()
-    price = models.FloatField()
-    berries = models.ManyToManyField('Berry', related_name='berries')
-    decors = models.ManyToManyField('Decor', related_name='decors')
-    signature = models.CharField(max_length=100)
+    price = models.FloatField(default=0)
+    level = models.ForeignKey('Level', on_delete=models.CASCADE, null=True, blank=True)
+    shape = models.ForeignKey('Shape', on_delete=models.CASCADE, null=True, blank=True)
+    topping = models.ForeignKey('Topping', on_delete=models.CASCADE, null=True, blank=True)
+    berries = models.ManyToManyField('Berry', related_name='berries', blank=True)
+    decors = models.ManyToManyField('Decor', related_name='decors', blank=True)
+    signature = models.CharField(max_length=100, blank=True)
+    complete = models.BooleanField(default=False)
 
     def __str__(self):
         main_text = f'{self.title}\n{self.price} руб.\n\n{self.description}'
@@ -30,9 +34,28 @@ class Cake(models.Model):
         return main_text
 
 
+class Level(models.Model):
+    slug = models.CharField(max_length=50, primary_key=True)
+    title = models.CharField(max_length=50)
+    price = models.FloatField(default=0)
+
+
+class Shape(models.Model):
+    slug = models.CharField(max_length=50, primary_key=True)
+    title = models.CharField(max_length=50)
+    price = models.FloatField(default=0)
+
+
+class Topping(models.Model):
+    slug = models.CharField(max_length=50, primary_key=True)
+    title = models.CharField(max_length=50)
+    price = models.FloatField(default=0)
+
+
 class Berry(models.Model):
     slug = models.CharField(max_length=50, primary_key=True)
     title = models.CharField(max_length=50)
+    price = models.FloatField(default=0)
 
     def __str__(self):
         return self.title
@@ -41,6 +64,7 @@ class Berry(models.Model):
 class Decor(models.Model):
     slug = models.CharField(max_length=50, primary_key=True)
     title = models.CharField(max_length=50)
+    price = models.FloatField(default=0)
 
     def __str__(self):
         return self.title
