@@ -56,6 +56,7 @@ def add_customizations(
         _, cake_pk = user_choice
 
         cake = Cake.objects.get(pk=cake_pk)
+        clients_cake = Cake()
         cake_repr = CakeRepresentation(cake)
         context.user_data['cake_repr'] = cake_repr
         update.callback_query.message.reply_photo(
