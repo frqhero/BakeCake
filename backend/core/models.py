@@ -6,9 +6,28 @@ class Cake(models.Model):
     image_link = models.CharField(max_length=500)
     description = models.TextField()
     price = models.FloatField()
+    berries = models.ManyToManyField('Berry', related_name='berries')
+    decors = models.ManyToManyField('Decor', related_name='decors')
+    signature = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.title
+        main_text = f'{self.title}\n{self.price} руб.\n\n{self.description}'
+        berries = self.berries.all()
+        decors = self.decors.all()
+        if berries:
+            berry_names = [berry.title for berry in berries]
+            joined_berry_names = ', '.join(berry_names)
+            berry_string = f'\n\nДобавленные ягоды: {joined_berry_names}'
+            main_text += berry_string
+        if decors:
+            decor_names = [decor.title for decor in decors]
+            joined_decor_name = ', '.join(decor_names)
+            decor_string = f'\n\nДобавленный декор: {joined_decor_name}'
+            main_text += decor_string
+        if self.signature:
+            signature_string = f'\n\nДобавленные надписи: {self.signature}'
+            main_text += signature_string
+        return main_text
 
 
 class Berry(models.Model):
