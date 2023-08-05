@@ -190,7 +190,7 @@ def select_shipping(update: Update, context: CallbackContext) -> str:
         delivery_guy, reply_markup=keyboard
     )
 
-    return 'SElECTING_SHIPPING'
+    return 'SELECTING_SHIPPING'
 
 
 def return_to_start(update: Update, context: CallbackContext) -> str:
@@ -211,19 +211,13 @@ def stop_nested(update: Update, context: CallbackContext) -> str:
 
 
 def ask_type_address(update: Update, context: CallbackContext) -> str:
+    update.callback_query.answer()
+    context.user_data['cake_repr'].delivery = True
     update.callback_query.message.reply_text(
         'Напишите пожалуйста адрес доставки'
     )
 
     return 'TYPING'
-
-
-def done_typing(update: Update, context: CallbackContext) -> str:
-    address = update.message.text
-    cake_repr = context.user_data['cake_repr']
-    cake_repr.address = address
-
-    'DONE_TYPING'
 
 
 def select_timeslot(update: Update, context: CallbackContext) -> str:
@@ -248,7 +242,7 @@ def select_timeslot(update: Update, context: CallbackContext) -> str:
 
 
 def ask_for_comment(update: Update, context: CallbackContext) -> str:
-    context.user_data['cake_repr'].timeslot = update.callback_query.data
+    context.user_data['cake_repr'].timeslot = int(update.callback_query.data)
     keyboard = InlineKeyboardMarkup(
         [
             [
@@ -273,6 +267,7 @@ def ask_type_comment(update: Update, context: CallbackContext) -> str:
 
 def send_order(update: Update, context: CallbackContext) -> str:
     update.callback_query.message.reply_text('sent')
+    # show result and ask to submit
     return 'SENDING_ORDER'
 
 
@@ -282,31 +277,89 @@ def write_comment(update: Update, context: CallbackContext) -> str:
     return 'SENDING_ORDER'
 
 
+def sum_up_n_send_order(update: Update, context: CallbackContext) -> str:
+    # show result and ask to submit
+    cake_repr = context.user_data['cake_repr']
+    cake_repr.comment = update.message.text
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton('Да', callback_data='yes'),
+                InlineKeyboardButton('Нет', callback_data='no'),
+            ]
+        ]
+    )
+    update.message.reply_photo(
+        cake_repr.cake.image_link,
+        str(cake_repr),
+    )
+    update.message.reply_text(
+        'Проверьте пожалуйста, если все верно, то мы готовы принять Ваш заказ',
+        reply_markup=keyboard
+    )
+
+    return 'SENDING_ORDER'
+
+
+def create_order(update: Update, context: CallbackContext) -> str:
+    cake_repr = context.user_data['cake_repr']
+    clients_cake = Cake()
+    clients_cake.title = cake_repr.cake.title
+    clients_cake.image_link = cake_repr.cake.image_link
+    clients_cake.description = cake_repr.cake.description
+    clients_cake.price = cake_repr.cake.price
+    clients_cake.level = cake_repr.level
+    clients_cake.shape = cake_repr.shape
+    clients_cake.topping = cake_repr.topping
+    clients_cake.signature = cake_repr.signature
+    clients_cake.delivery = cake_repr.delivery
+    clients_cake.ready_at = cake_repr.ready_at
+    clients_cake.timeslot = cake_repr.timeslot
+    clients_cake.address = cake_repr.address
+    clients_cake.comment = cake_repr.comment
+    clients_cake.save()
+    # m2m after save
+    if cake_repr.berries:
+        for berry in cake_repr.berries:
+            clients_cake.berries.add(berry)
+    if cake_repr.decors:
+        for decor in cake_repr.decors:
+            clients_cake.decors.add(decor)
+
+
+    update.callback_query.message.reply_text('Спасибо, заказ создан!')
+
+    return 'ORDER_CREATED'
+
+
 def main():
     tg_bot_token = settings.TG_BOT_TOKEN
     updater = Updater(token=tg_bot_token)
     dispatcher = updater.dispatcher
 
-    timeslot_n_comment = ConversationHandler(
+    timeslot_n_comment_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_comment, pattern='^\d$')],
         states={
             'ADDING_COMMENT': [
                 CallbackQueryHandler(ask_type_comment, pattern='^yes$'),
                 CallbackQueryHandler(send_order, pattern='^no$'),
             ],
-            'TYPING': [MessageHandler(Filters.text, write_comment)],
-            'SENDING_ORDER': []
+            'TYPING': [MessageHandler(Filters.text, sum_up_n_send_order)],
+            'SENDING_ORDER': [CallbackQueryHandler(create_order, pattern='^yes$')],
         },
         fallbacks={},
+        map_to_parent={
+            'ORDER_CREATED': -1
+        }
     )
 
-    shipping_handler = ConversationHandler(
+    shipping_conv = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(select_shipping, pattern='^agree'),
             CallbackQueryHandler(return_to_start, pattern='^disagree'),
         ],
         states={
-            'SElECTING_SHIPPING': [
+            'SELECTING_SHIPPING': [
                 CallbackQueryHandler(ask_type_address, pattern='^delivery$')
             ],
             'SELECTING_TIMESLOT': [],
@@ -358,8 +411,8 @@ def main():
                 CallbackQueryHandler(go_main, pattern='^MAIN$'),
             ],
             'SELECTING_CAKE': [customization_handler],
-            'ACCEPTING_TERMS': [shipping_handler],
-            'SELECTING_TIMING': [timeslot_n_comment],
+            'ACCEPTING_TERMS': [shipping_conv],
+            'SELECTING_TIMING': [timeslot_n_comment_conv],
         },
         fallbacks=[CommandHandler('stop', stop)],
     )

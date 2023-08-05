@@ -15,19 +15,29 @@ class Cake(models.Model):
     signature = models.CharField(max_length=100, blank=True)
     complete = models.BooleanField(default=False)
     TIMESLOTS = (
-        ('1', '10-12'),
-        ('2', '12-14'),
-        ('3', '14-16'),
-        ('4', '16-18'),
-        ('5', '18-20'),
+        (1, '10-12'),
+        (2, '12-14'),
+        (3, '14-16'),
+        (4, '16-18'),
+        (5, '18-20'),
     )
     timeslot = models.IntegerField(choices=TIMESLOTS, default=1)
-
-    @property
-    def bold_entity(self):
-        return MessageEntity(
-            type=MessageEntity.BOLD, offset=0, length=len(self.title)
-        )
+    DELIVERY_CHOICES = (
+        (0, 'Самовывоз'),
+        (1, 'Доставка'),
+    )
+    delivery = models.IntegerField(choices=DELIVERY_CHOICES, default=0)
+    ready_at = models.DateField(null=True, blank=True, default=None)
+    address = models.CharField(max_length=500, default='')
+    comment = models.CharField(max_length=500, default='')
+    STATUSES = (
+        (1, 'Новый'),
+        (2, 'Отменен'),
+        (3, 'Приготовить'),
+        (4, 'Доставить'),
+        (5, 'Выполнен'),
+    )
+    status = models.IntegerField(choices=STATUSES, default=1)
 
     def __str__(self):
         main_text = f'{self.title}\n{self.price} руб.\n\n{self.description}'
