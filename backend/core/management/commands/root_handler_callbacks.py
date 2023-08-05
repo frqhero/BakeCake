@@ -51,7 +51,7 @@ def stop(update: Update, context: CallbackContext) -> int:
 def select_cake(update: Update, context: CallbackContext) -> str:
     update.callback_query.answer()
 
-    cakes = Cake.objects.filter(complete=True)
+    cakes = Cake.objects.filter(status=6)
 
     for cake in cakes:
         bold_entity = MessageEntity(

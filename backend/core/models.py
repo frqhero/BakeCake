@@ -13,7 +13,6 @@ class Cake(models.Model):
     berries = models.ManyToManyField('Berry', blank=True, symmetrical=False)
     decors = models.ManyToManyField('Decor', related_name='decors', blank=True)
     signature = models.CharField(max_length=100, blank=True)
-    complete = models.BooleanField(default=False)
     TIMESLOTS = (
         (1, '10-12'),
         (2, '12-14'),
@@ -28,14 +27,15 @@ class Cake(models.Model):
     )
     delivery = models.IntegerField(choices=DELIVERY_CHOICES, default=0)
     ready_at = models.DateField(null=True, blank=True, default=None)
-    address = models.CharField(max_length=500, default='')
-    comment = models.CharField(max_length=500, default='')
+    address = models.CharField(max_length=500, default='', blank=True)
+    comment = models.CharField(max_length=500, default='', blank=True)
     STATUSES = (
         (1, 'Новый'),
         (2, 'Отменен'),
         (3, 'Приготовить'),
         (4, 'Доставить'),
         (5, 'Выполнен'),
+        (6, 'Образец'),
     )
     status = models.IntegerField(choices=STATUSES, default=1)
 
