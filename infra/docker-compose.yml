@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: ../
+      dockerfile: backend/Dockerfile
+    volumes:
+        - ./.env:/app/backend/.env
+        - static_volume:/app/backend/staticfiles/
+        - ./entrypoint.sh:/app/backend/entrypoint.sh
+  nginx:
+    image: nginx:1.19.3
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/var/html/static/
+    depends_on:
+      - backend
+
+volumes:
+  static_volume:
